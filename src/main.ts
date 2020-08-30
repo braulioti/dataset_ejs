@@ -2,6 +2,9 @@ import * as express from 'express';
 import * as path from 'path';
 // https://node-postgres.com/
 import {Client} from 'pg';
+// json2csv
+import {Parser} from 'json2csv';
+import * as fs from 'fs';
 
 const app = express();
 const client = new Client({
@@ -25,8 +28,17 @@ app.post('/aprovado', async (req, res) => {
         // throw new Error('Teste de erro!');
         await client.connect();
         const data = await client.query('SELECT * FROM obesity WHERE entity <> $1;', ['World']);
-        console.log(data.rows);
-        res.render('aprovado.ejs');
+
+        const parser = new Parser();
+        const csv = parser.parse(data.rows);
+
+        fs.writeFile(path.join(__dirname, '../datasets/obesity.csv'), csv, (err) => {
+            if (err) {
+                throw new Error(err.message);
+            } else {
+                res.render('aprovado.ejs');
+            }
+        });
     } catch (e) {
         console.log(e.message);
         res.render('erro-aprovacao.ejs');
